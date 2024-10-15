@@ -1,0 +1,17 @@
+title,district,author,copy_id,publication_year,publisher,call_number,edition,new_release
+This is not my pizza!,Central,"Hawes, Alison.",1,1985,Oxford University Press,421.5 HAW,None,False
+找尋自己的聲音,New Territories,"迪克馬斯 (Dicmas, Courtney.)",2,2022,維京國際股份有限公司,JJ 3428,NULL,False
+The Christmas Pig,Kowloon,"Rowling, J. K.",1,1987,"Little, Brown Books for Young Readers",JF ROW,None,False
+Peppa goes swimming,Kowloon,"Archer, Mandy.",2,1981,Ladybird Books,JJ PEP,NULL,False
+Peppa goes swimming,Kowloon,"Archer, Mandy.",1,1981,Ladybird Books,JJ PEP,None,True
+謝謝你，熊醫生,Central,角野榮子,1,1982,維京國際股份有限公司,861.59 2691,None,True
+找尋自己的聲音,Central,"迪克馬斯 (Dicmas, Courtney.)",1,2022,維京國際股份有限公司,JJ 3428,None,True
+The night ends with fire,Kowloon,"Song, K. X.",3,1980,Ace Books,F SON,NULL,False
+First Lie Wins,New Territories,"Elston, Ashley",1,1983,Pamela Dorman Books/Viking,F ELS,First United States edition.,False
+Martyr!,Kowloon,"Akbar, Kaveh.",2,1984,Alfred A. Knopf,F AKB,First edition.,False
+Marrying Outside Your Tradition,New Territories,"Schaper, Donna.",1,1986,"Rowman & Littlefield, Lanham",306.843 SCH,None,False
+The night ends with fire,Central,"Song, K. X.",2,1980,Ace Books,F SON,NULL,False
+Martyr!,Kowloon,"Akbar, Kaveh.",1,1984,Alfred A. Knopf,F AKB,First edition.,False
+Martyr!,New Territories,"Akbar, Kaveh.",4,1984,Alfred A. Knopf,F AKB,First edition.,False
+Martyr!,New Territories,"Akbar, Kaveh.",3,1984,Alfred A. Knopf,F AKB,First edition.,False
+The night ends with fire,New Territories,"Song, K. X.",1,1980,Ace Books,F SON,None,True
