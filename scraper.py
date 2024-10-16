@@ -22,12 +22,16 @@ saved in a CSV file named 'scraped_books.csv' in the same directory.
 Note: Ensure that the Chrome WebDriver executable (chromedriver) is available
 in the './chromedriver/' directory relative to this script.
 
+This version (1.1) includes optimizations for memory efficiency, processing
+books one at a time instead of storing all book details in memory at once.
+
 Author: Poon Ho Chuen
-Date: 15 Oct 2024
-Version: 1.0
+Date: 16 Oct 2024
+Version: 1.1
 """
 
 import csv
+from functools import partial
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -70,8 +74,83 @@ def extract_text(element, selector, split_delimiter=": "):
         return ""
 
 
-def extract_book_details(book):
-    """Extract detailed information from a single book element."""
+def extract_book_details(selectors, book):
+    """
+    Extract detailed information from a single book element.
+    
+    Parameters:
+        selectors: A dictionary mapping detail keys to CSS selectors.
+        book: The Selenium WebElement representing a book.
+
+    Returns:
+        A dictionary containing the extracted book details.
+    """
+    extract = partial(extract_text, book)
+    details = {
+        key: (book.find_element(By.CSS_SELECTOR, selector).text if key ==
+              "title" else extract(selector))
+        for key, selector in selectors.items()
+        if key != "new_release"
+    }
+    details["new_release"] = bool(book.find_elements(
+        By.CSS_SELECTOR, selectors["new_release"]))
+    return details
+
+
+def fetch_books(driver):
+    """Generator to fetch all book elements across paginated pages."""
+    wait = WebDriverWait(driver, 10)
+    while True:
+        wait.until(EC.presence_of_all_elements_located(
+            (By.CSS_SELECTOR, ".card.listing-preview")))
+        yield from driver.find_elements(By.CSS_SELECTOR, ".card.listing-preview")
+
+        try:
+            next_button = driver.find_element(
+                By.XPATH, '//a[normalize-space()="»"]')
+            if next_button.is_enabled() and next_button.is_displayed():
+                next_button.click()
+                wait.until(EC.staleness_of(next_button))
+            else:
+                break
+        except (NoSuchElementException, ElementClickInterceptedException, TimeoutException):
+            break
+
+
+def write_books_to_csv(filename, fieldnames, books):
+    """
+    Write book details to a CSV file and return the count of books written.
+
+    Parameters:
+        filename: The name of the CSV file to write to.
+        fieldnames: A list of field names for the CSV header.
+        books: An iterable of dictionaries containing book details.
+
+    Returns:
+        The number of books written to the CSV file.
+    """
+    count = 0
+    with open(filename, mode='w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for book in books:
+            print(book)
+            writer.writerow(book)
+            count += 1
+    return count
+
+
+def main():
+    """
+    Main function to orchestrate the scraping process.
+    
+    This function sets up the WebDriver, defines the CSS selectors for book details,
+    fetches books from the website, extracts their details, and writes them to a CSV file.
+    It uses a memory-efficient approach by processing books one at a time.
+    """
+    driver = setup_driver()
+    driver.get("https://library.happycoding.hk/books/")
+
     selectors = {
         "title": "h4.text-primary",
         "district": "i.fas.fa-map-marker",
@@ -84,69 +163,18 @@ def extract_book_details(book):
         "new_release": "span.badge.badge-secondary.text-white"
     }
 
-    details = {
-        key: (
-            book.find_element(By.CSS_SELECTOR, selector).text
-            if key == "title"
-            else extract_text(book, selector)
-        )
-        for key, selector in selectors.items()
-        if key != "new_release"
-    }
-
-    details["new_release"] = bool(book.find_elements(
-        By.CSS_SELECTOR, selectors["new_release"]))
-
-    return details
-
-
-def write_to_csv(book_details, filename="scraped_books.csv"):
-    """Write a list of book detail dictionaries to a CSV file."""
-    fieldnames = [
-        "title", "district", "author", "copy_id",
-        "publication_year", "publisher", "call_number",
-        "edition", "new_release"
-    ]
-
-    with open(filename, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(book_details)
-
-    print(f"Book details have been saved to {filename}")
-
-
-def fetch_books(driver):
-    """Generator to fetch all book elements across paginated pages."""
-    while True:
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located(
-                (By.CSS_SELECTOR, ".card.listing-preview"))
-        )
-        yield from driver.find_elements(By.CSS_SELECTOR, ".card.listing-preview")
-
-        try:
-            next_button = driver.find_element(
-                By.XPATH, '//a[normalize-space()="»"]')
-            if next_button.is_enabled() and next_button.is_displayed():
-                next_button.click()
-                WebDriverWait(driver, 10).until(EC.staleness_of(next_button))
-            else:
-                break
-        except (NoSuchElementException, ElementClickInterceptedException, TimeoutException):
-            break
-
-
-def main():
-    """Main function to orchestrate the scraping process."""
-    driver = setup_driver()
-    driver.get("https://library.happycoding.hk/books/")
-
     try:
-        book_details = list(map(extract_book_details, fetch_books(driver)))
-        list(map(print, book_details))
-        write_to_csv(book_details)
-        print(f"Total books scraped: {len(book_details)}")
+        book_elements = fetch_books(driver)
+        extract_details = partial(extract_book_details, selectors)
+        book_details = map(extract_details, book_elements)
+        fieldnames = [
+            "title", "district", "author", "copy_id",
+            "publication_year", "publisher", "call_number",
+            "edition", "new_release"
+        ]
+        count = write_books_to_csv(
+            "scraped_books.csv", fieldnames, book_details)
+        print(f"Total books scraped: {count}")
     finally:
         driver.quit()
 
